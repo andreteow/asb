@@ -9,10 +9,12 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Toast } from "@/components/ui/toast"
+import { handleEntitySubmission } from "@/app/actions/entities"
 
 interface AddEntityFormProps {
   initialData?: any
-  onSubmit: (data: any) => void
+  onSubmit?: (data: any) => void
   isLoading?: boolean
   isEditing?: boolean
 }
@@ -42,6 +44,9 @@ export function AddEntityForm({ initialData, onSubmit, isLoading = false, isEdit
     institutional_support: initialData?.institutional_support || "",
   })
 
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null)
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
     setFormData((prev) => ({ ...prev, [name]: value }))
@@ -51,9 +56,57 @@ export function AddEntityForm({ initialData, onSubmit, isLoading = false, isEdit
     setFormData((prev) => ({ ...prev, [name]: value }))
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    onSubmit(formData)
+
+    // If there's a custom onSubmit handler (for the mock flow), use it
+    if (onSubmit) {
+      onSubmit(formData)
+      return
+    }
+
+    // Otherwise, use the real server action
+    setIsSubmitting(true)
+
+    try {
+      const formDataObj = new FormData()
+
+      // Add all form fields to FormData
+      Object.entries(formData).forEach(([key, value]) => {
+        if (value) {
+          formDataObj.append(key, value.toString())
+        }
+      })
+
+      console.log("Submitting form with data:", formData)
+
+      const result = await handleEntitySubmission(formDataObj)
+
+      if (result.success) {
+        setToast({
+          message: result.message || "Organization submitted successfully!",
+          type: "success",
+        })
+
+        // Reset form after successful submission
+        setTimeout(() => {
+          window.location.href = "/?submitted=true"
+        }, 2000)
+      } else {
+        setToast({
+          message: result.error || "Failed to submit organization",
+          type: "error",
+        })
+      }
+    } catch (error: any) {
+      console.error("Error submitting form:", error)
+      setToast({
+        message: error.message || "An unexpected error occurred",
+        type: "error",
+      })
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -321,8 +374,8 @@ export function AddEntityForm({ initialData, onSubmit, isLoading = false, isEdit
         </div>
       </div>
 
-      <Button type="submit" className="w-full" disabled={isLoading}>
-        {isLoading ? (
+      <Button type="submit" className="w-full" disabled={isSubmitting || isLoading}>
+        {isSubmitting || isLoading ? (
           <>
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             Submitting...
@@ -331,6 +384,8 @@ export function AddEntityForm({ initialData, onSubmit, isLoading = false, isEdit
           "Submit Profile"
         )}
       </Button>
+
+      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
     </form>
   )
 }

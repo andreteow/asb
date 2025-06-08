@@ -748,8 +748,14 @@ export async function getPendingEntities(): Promise<Entity[]> {
     const supabase = getSupabase()
 
     if (!supabase) {
-      console.log("Supabase not available, cannot get pending entities")
-      return [] // Or handle mock data for pending entities if needed
+      console.log("Supabase not available, using mock pending entities")
+      // Return mock pending entities
+      const mockDataModule = await import("./mock-data")
+      return mockDataModule.mockPendingEntities.map((entity: any) => ({
+        ...entity,
+        _claim_status: "pending",
+        _approved: false,
+      }))
     }
 
     const { data, error } = await supabase
@@ -808,8 +814,9 @@ export async function getUpdateLogs(limit = 20): Promise<any[]> {
     const supabase = getSupabase()
 
     if (!supabase) {
-      console.log("Supabase not available, cannot get update logs")
-      return [] // Or handle mock data for update logs if needed
+      console.log("Supabase not available, using mock update logs")
+      const mockDataModule = await import("./mock-data")
+      return mockDataModule.mockUpdateLogs
     }
 
     const { data, error } = await supabase
@@ -836,8 +843,8 @@ export async function approveEntity(id: string): Promise<{ success: boolean; err
     const supabase = getSupabase()
 
     if (!supabase) {
-      console.log("Supabase not available, cannot approve entity")
-      return { success: false, error: "Supabase not available" }
+      console.log("Supabase not available, simulating entity approval")
+      return { success: true }
     }
 
     const { error } = await supabase
@@ -867,8 +874,8 @@ export async function rejectEntity(id: string): Promise<{ success: boolean; erro
     const supabase = getSupabase()
 
     if (!supabase) {
-      console.log("Supabase not available, cannot reject entity")
-      return { success: false, error: "Supabase not available" }
+      console.log("Supabase not available, simulating entity rejection")
+      return { success: true }
     }
 
     const { error } = await supabase
