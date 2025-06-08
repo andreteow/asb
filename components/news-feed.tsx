@@ -1,37 +1,90 @@
+"use client"
+
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Newspaper } from "lucide-react"
+import { Newspaper, ExternalLink } from "lucide-react"
+import { getLatestNews } from "@/app/actions/news"
+
+interface NewsItem {
+  title: string
+  summary: string
+  url: string
+  source: string
+  publishedDate: string
+  relevanceScore: number
+}
 
 export function NewsFeed() {
-  const newsItems = [
-    {
-      id: "1",
-      title: "Malaysian Social Enterprises Receive RM5M in New Funding",
-      source: "The Star",
-      date: "2 days ago",
-      url: "#",
-    },
-    {
-      id: "2",
-      title: "Impact Investing Forum Highlights Growth in Southeast Asia",
-      source: "New Straits Times",
-      date: "3 days ago",
-      url: "#",
-    },
-    {
-      id: "3",
-      title: "New Accelerator Program Launches for Climate Tech Startups",
-      source: "The Edge Markets",
-      date: "5 days ago",
-      url: "#",
-    },
-    {
-      id: "4",
-      title: "Social Enterprise Alliance Announces Annual Awards",
-      source: "Malay Mail",
-      date: "1 week ago",
-      url: "#",
-    },
-  ]
+  const [newsItems, setNewsItems] = useState<NewsItem[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchNews = async () => {
+      try {
+        const news = await getLatestNews(4) // Get top 4 for the sidebar
+        setNewsItems(news)
+      } catch (error) {
+        console.error("Error fetching news:", error)
+        // Fallback to static news items
+        setNewsItems([
+          {
+            title: "Malaysian Social Enterprises Receive RM5M in New Funding",
+            summary:
+              "A consortium of social enterprises in Malaysia has secured RM5 million in funding to expand their impact programs.",
+            url: "#",
+            source: "The Star",
+            publishedDate: "2024-01-15",
+            relevanceScore: 9,
+          },
+          {
+            title: "Impact Investing Forum Highlights Growth in Southeast Asia",
+            summary:
+              "The annual Impact Investing Forum showcased significant growth in the sector, with Malaysia leading several initiatives.",
+            url: "#",
+            source: "New Straits Times",
+            publishedDate: "2024-01-14",
+            relevanceScore: 8,
+          },
+        ])
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchNews()
+  }, [])
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString)
+    const now = new Date()
+    const diffTime = Math.abs(now.getTime() - date.getTime())
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+
+    if (diffDays === 1) return "1 day ago"
+    if (diffDays < 7) return `${diffDays} days ago`
+    if (diffDays < 14) return "1 week ago"
+    return `${Math.floor(diffDays / 7)} weeks ago`
+  }
+
+  if (loading) {
+    return (
+      <Card className="border-primary-100">
+        <CardHeader className="border-b border-primary-100 pb-3">
+          <CardTitle className="text-lg text-primary-700">Latest News</CardTitle>
+        </CardHeader>
+        <CardContent className="px-4 pb-4 pt-4">
+          <div className="space-y-4">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="animate-pulse">
+                <div className="h-4 bg-gray-200 rounded mb-2"></div>
+                <div className="h-3 bg-gray-200 rounded w-3/4"></div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
 
   return (
     <Card className="border-primary-100">
@@ -40,22 +93,36 @@ export function NewsFeed() {
       </CardHeader>
       <CardContent className="px-4 pb-4 pt-4">
         <div className="space-y-4">
-          {newsItems.map((item) => (
+          {newsItems.map((item, index) => (
             <a
-              key={item.id}
+              key={index}
               href={item.url}
+              target="_blank"
+              rel="noopener noreferrer"
               className="block rounded-lg border border-primary-100 p-3 transition-colors hover:bg-primary-50"
             >
               <div className="flex gap-3">
                 <div className="mt-0.5 rounded-md bg-primary-100 p-1">
                   <Newspaper className="h-4 w-4 text-primary-700" />
                 </div>
-                <div>
-                  <h4 className="line-clamp-2 text-sm font-medium">{item.title}</h4>
-                  <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
+                <div className="flex-1">
+                  <div className="flex items-start justify-between gap-2">
+                    <h4 className="line-clamp-2 text-sm font-medium">{item.title}</h4>
+                    {item.url !== "#" && (
+                      <ExternalLink className="h-3 w-3 text-muted-foreground flex-shrink-0 mt-0.5" />
+                    )}
+                  </div>
+                  {item.summary && <p className="mt-1 text-xs text-muted-foreground line-clamp-2">{item.summary}</p>}
+                  <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
                     <span>{item.source}</span>
                     <span>•</span>
-                    <span>{item.date}</span>
+                    <span>{formatDate(item.publishedDate)}</span>
+                    {item.relevanceScore && (
+                      <>
+                        <span>•</span>
+                        <span className="text-primary-600">Score: {item.relevanceScore}/10</span>
+                      </>
+                    )}
                   </div>
                 </div>
               </div>

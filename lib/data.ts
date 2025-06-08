@@ -9,7 +9,7 @@ export async function getEntities({
   sector,
   location,
   page = 1,
-  limit = 10,
+  limit = 1000, // Default to large limit to get all results
 }: {
   query?: string
   entityType?: string
@@ -52,7 +52,7 @@ export async function getEntities({
       supabaseQuery = supabaseQuery.ilike("hq_location", `%${location}%`)
     }
 
-    // Add pagination
+    // Add pagination (but with large limit to get all results)
     const from = (page - 1) * limit
     const to = from + limit - 1
     supabaseQuery = supabaseQuery.range(from, to).order("name")
@@ -77,7 +77,7 @@ export async function getEntities({
       contact_email: item.contact_email || undefined,
       industry_sector: item.industry_sector || undefined,
       social_status: item.social_status || undefined,
-      funding_stage: item.funding_stage || undefined,
+      funding_stage: item.social_status || undefined,
       cheque_size_range: item.cheque_size_range || undefined,
       investment_thesis: item.investment_thesis || undefined,
       program_type: item.program_type || undefined,
@@ -112,7 +112,7 @@ function getMockData(
   sector?: string,
   location?: string,
   page = 1,
-  limit = 10,
+  limit = 1000,
 ): Promise<{ entities: Entity[]; total: number; totalPages: number }> {
   return import("./mock-data").then(({ default: mockData }) => {
     let entities = [...mockData]
@@ -151,6 +151,12 @@ function getMockData(
 
     const total = entities.length
     const totalPages = Math.ceil(total / limit)
+
+    // For single page display, don't slice the results
+    if (limit >= 1000) {
+      return { entities, total, totalPages: 1 }
+    }
+
     const startIndex = (page - 1) * limit
     entities = entities.slice(startIndex, startIndex + limit)
 

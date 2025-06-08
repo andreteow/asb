@@ -3,7 +3,6 @@ import { EntityTypeFilter } from "@/components/entity-type-filter"
 import { RealTimeSearch } from "@/components/real-time-search"
 import { CollapsibleFilterSidebar } from "@/components/collapsible-filter-sidebar"
 import { NewsFeed } from "@/components/news-feed"
-import { Pagination } from "@/components/pagination"
 import { getEntities } from "@/lib/data"
 
 export default async function Home({
@@ -15,22 +14,28 @@ export default async function Home({
   const entityType = typeof searchParams.type === "string" ? searchParams.type : "all"
   const sector = typeof searchParams.sector === "string" ? searchParams.sector : undefined
   const location = typeof searchParams.location === "string" ? searchParams.location : undefined
-  const page = typeof searchParams.page === "string" ? Number.parseInt(searchParams.page) : 1
 
-  // The getEntities function now handles the case when Supabase is not available
-  const { entities, total, totalPages } = await getEntities({
+  // Get all entities without pagination
+  const { entities, total } = await getEntities({
     query,
     entityType,
     sector,
     location,
-    page,
-    limit: 10,
+    page: 1,
+    limit: 1000, // Large limit to get all results
   })
 
   return (
     <main className="flex min-h-screen flex-col">
-      <div className="bg-primary-700 py-16 text-white">
-        <div className="container mx-auto px-4">
+      <div className="bg-primary-700 py-16 text-white relative overflow-hidden">
+        <div
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-20"
+          style={{
+            backgroundImage: "url('/hero-bg.png')",
+          }}
+        />
+        <div className="absolute inset-0 backdrop-blur-[1px]" />
+        <div className="container mx-auto px-4 relative z-10">
           <div className="max-w-3xl">
             <h1 className="text-4xl font-bold tracking-tight md:text-5xl">
               Malaysia&apos;s Impact Ecosystem Directory
@@ -63,16 +68,11 @@ export default async function Home({
             </div>
 
             {entities.length > 0 ? (
-              <>
-                <div className="grid grid-cols-1 gap-4">
-                  {entities.map((entity) => (
-                    <EntityCard key={entity.id} entity={entity} />
-                  ))}
-                </div>
-                <div className="mt-8">
-                  <Pagination currentPage={page} totalPages={totalPages} total={total} />
-                </div>
-              </>
+              <div className="grid grid-cols-1 gap-4">
+                {entities.map((entity) => (
+                  <EntityCard key={entity.id} entity={entity} />
+                ))}
+              </div>
             ) : (
               <div className="rounded-lg border border-dashed p-8 text-center">
                 <h3 className="text-lg font-medium">No matches found</h3>

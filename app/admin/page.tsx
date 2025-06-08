@@ -11,6 +11,7 @@ import { UploadCsvForm } from "@/components/upload-csv-form"
 import { Toast } from "@/components/ui/toast"
 import { mockPendingEntities, mockUpdateLogs } from "@/lib/mock-data"
 import { PendingEntityModal } from "@/components/pending-entity-modal"
+import { fetchTrendingNews } from "@/app/actions/news"
 
 export default function AdminPage() {
   const [isUpdating, setIsUpdating] = useState(false)
@@ -56,23 +57,40 @@ export default function AdminPage() {
     setIsRefreshingNews(true)
 
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 2000))
+      const result = await fetchTrendingNews()
 
-      // Add a new log entry
+      if (result.success) {
+        // Add a new log entry
+        const newLog = {
+          id: Date.now().toString(),
+          timestamp: new Date().toISOString(),
+          action: "news_refresh",
+          details: `${result.newsCount || 0} trending news items fetched from Grok AI`,
+          duration: "30 secs",
+        }
+        setUpdateLogs([newLog, ...updateLogs])
+        setLastNewsRefresh(new Date())
+        setToast({
+          message: `Successfully fetched ${result.newsCount || 0} trending news items`,
+          type: "success",
+        })
+      } else {
+        throw new Error(result.error || "Failed to fetch news")
+      }
+    } catch (error: any) {
+      console.error("Error refreshing news:", error)
       const newLog = {
         id: Date.now().toString(),
         timestamp: new Date().toISOString(),
         action: "news_refresh",
-        details: "42 news items fetched",
-        duration: "1 min",
+        details: `Failed: ${error.message}`,
+        duration: "10 secs",
       }
       setUpdateLogs([newLog, ...updateLogs])
-      setLastNewsRefresh(new Date())
-      setToast({ message: "Refresh Success", type: "success" })
-    } catch (error) {
-      console.error("Error refreshing news:", error)
-      setToast({ message: "Refresh Failed", type: "error" })
+      setToast({
+        message: `News refresh failed: ${error.message}`,
+        type: "error",
+      })
     } finally {
       setIsRefreshingNews(false)
     }
@@ -161,14 +179,14 @@ export default function AdminPage() {
         <Card>
           <CardHeader className="pb-3">
             <CardTitle>Refresh News Feed</CardTitle>
-            <CardDescription>Fetch latest news for all organizations</CardDescription>
+            <CardDescription>Fetch top 10 trending news with Grok AI</CardDescription>
           </CardHeader>
           <CardContent>
             <Button onClick={handleRefreshNews} disabled={isRefreshingNews} className="w-full mb-2" variant="outline">
               {isRefreshingNews ? (
                 <>
                   <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                  Refreshing...
+                  Fetching News...
                 </>
               ) : (
                 <>

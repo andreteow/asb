@@ -14,9 +14,22 @@ interface PaginationProps {
 export function Pagination({ currentPage, totalPages, total }: PaginationProps) {
   const searchParams = useSearchParams()
 
+  console.log(
+    "Pagination - Current page:",
+    currentPage,
+    "Total pages:",
+    totalPages,
+    "Search params:",
+    searchParams.toString(),
+  )
+
   const createPageUrl = (page: number) => {
     const params = new URLSearchParams(searchParams.toString())
-    params.set("page", page.toString())
+    if (page === 1) {
+      params.delete("page") // Remove page param for page 1 to keep URLs clean
+    } else {
+      params.set("page", page.toString())
+    }
     return `?${params.toString()}`
   }
 
