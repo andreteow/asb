@@ -86,25 +86,8 @@ export default function AddPage() {
     }
   }
 
-  const handleFormSubmit = async (formData: any) => {
-    setIsLoading(true)
-
-    try {
-      // In a real implementation, this would submit to your API
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-
-      // Redirect to home with success message
-      setToast({ message: "Organization submitted successfully!", type: "success" })
-      setTimeout(() => {
-        router.push("/?success=true")
-      }, 2000)
-    } catch (error) {
-      console.error("Error submitting form:", error)
-      setToast({ message: "Error submitting form", type: "error" })
-    } finally {
-      setIsLoading(false)
-    }
-  }
+  // Remove the custom handleFormSubmit since we want to use the real server action
+  // The AddEntityForm will handle submission directly
 
   if (isLoadingEntity) {
     return (
@@ -207,12 +190,7 @@ export default function AddPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <AddEntityForm
-                initialData={entityData}
-                onSubmit={handleFormSubmit}
-                isLoading={isLoading}
-                isEditing={!!editId}
-              />
+              <AddEntityForm initialData={entityData} isEditing={!!editId} />
             </CardContent>
           </Card>
         )}

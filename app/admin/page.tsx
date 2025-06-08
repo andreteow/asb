@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef } from "react"
+import { useState, useRef, useEffect } from "react"
 import { RefreshCw, Database, Check, X, Clock, Upload } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -9,15 +9,15 @@ import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { UploadCsvForm } from "@/components/upload-csv-form"
 import { Toast } from "@/components/ui/toast"
-import { mockPendingEntities, mockUpdateLogs } from "@/lib/mock-data"
 import { PendingEntityModal } from "@/components/pending-entity-modal"
-import { fetchTrendingNews } from "@/app/actions/news"
+import { fetchTrendingNews, updateNewsCache } from "@/app/actions/news"
+import { getPendingEntities, getUpdateLogs, approveEntity, rejectEntity } from "@/lib/data"
 
 export default function AdminPage() {
   const [isUpdating, setIsUpdating] = useState(false)
   const [isRefreshingNews, setIsRefreshingNews] = useState(false)
-  const [pendingEntities, setPendingEntities] = useState(mockPendingEntities)
-  const [updateLogs, setUpdateLogs] = useState(mockUpdateLogs)
+  const [pendingEntities, setPendingEntities] = useState<any[]>([])
+  const [updateLogs, setUpdateLogs] = useState<any[]>([])
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null)
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null)
   const [lastNewsRefresh, setLastNewsRefresh] = useState<Date | null>(null)
@@ -26,6 +26,21 @@ export default function AdminPage() {
 
   const [selectedEntity, setSelectedEntity] = useState<any | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
+
+  // Load initial data
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const [pending, logs] = await Promise.all([getPendingEntities(), getUpdateLogs(20)])
+        setPendingEntities(pending)
+        setUpdateLogs(logs)
+      } catch (error) {
+        console.error("Error loading admin data:", error)
+      }
+    }
+
+    loadData()
+  }, [])
 
   const handleRunUpdate = async () => {
     setIsUpdating(true)
@@ -55,36 +70,47 @@ export default function AdminPage() {
 
   const handleRefreshNews = async () => {
     setIsRefreshingNews(true)
+    const startTime = Date.now()
 
     try {
       const result = await fetchTrendingNews()
 
-      if (result.success) {
+      if (result.success && result.newsItems) {
+        // Update the in-memory cache
+        updateNewsCache(result.newsItems)
+
+        const duration = Math.round((Date.now() - startTime) / 1000)
+
         // Add a new log entry
         const newLog = {
           id: Date.now().toString(),
           timestamp: new Date().toISOString(),
           action: "news_refresh",
-          details: `${result.newsCount || 0} trending news items fetched from Grok AI`,
-          duration: "30 secs",
+          details: `${result.newsItems.length} trending news items fetched from Grok AI`,
+          duration: `${duration} secs`,
         }
         setUpdateLogs([newLog, ...updateLogs])
         setLastNewsRefresh(new Date())
         setToast({
-          message: `Successfully fetched ${result.newsCount || 0} trending news items`,
+          message: `Successfully fetched ${result.newsItems.length} trending news items`,
           type: "success",
         })
+
+        // Trigger a refresh of the news feed component
+        window.dispatchEvent(new CustomEvent("newsRefreshed"))
       } else {
         throw new Error(result.error || "Failed to fetch news")
       }
     } catch (error: any) {
       console.error("Error refreshing news:", error)
+      const duration = Math.round((Date.now() - startTime) / 1000)
+
       const newLog = {
         id: Date.now().toString(),
         timestamp: new Date().toISOString(),
         action: "news_refresh",
         details: `Failed: ${error.message}`,
-        duration: "10 secs",
+        duration: `${duration} secs`,
       }
       setUpdateLogs([newLog, ...updateLogs])
       setToast({
@@ -106,34 +132,58 @@ export default function AdminPage() {
     setSelectedEntity(null)
   }
 
-  const handleApprove = (id: string) => {
-    setPendingEntities(pendingEntities.filter((entity) => entity.id !== id))
+  const handleApprove = async (id: string) => {
+    try {
+      const result = await approveEntity(id)
 
-    // Add a new log entry
-    const entityName = pendingEntities.find((e) => e.id === id)?.name || "Unknown"
-    const newLog = {
-      id: Date.now().toString(),
-      timestamp: new Date().toISOString(),
-      action: "approve",
-      details: `Approved: ${entityName}`,
-      duration: "1 sec",
+      if (result.success) {
+        setPendingEntities(pendingEntities.filter((entity) => entity.id !== id))
+
+        // Add a new log entry
+        const entityName = pendingEntities.find((e) => e.id === id)?.name || "Unknown"
+        const newLog = {
+          id: Date.now().toString(),
+          timestamp: new Date().toISOString(),
+          action: "approve",
+          details: `Approved: ${entityName}`,
+          duration: "1 sec",
+        }
+        setUpdateLogs([newLog, ...updateLogs])
+        setToast({ message: `Successfully approved ${entityName}`, type: "success" })
+      } else {
+        setToast({ message: result.error || "Failed to approve entity", type: "error" })
+      }
+    } catch (error: any) {
+      console.error("Error approving entity:", error)
+      setToast({ message: error.message || "Failed to approve entity", type: "error" })
     }
-    setUpdateLogs([newLog, ...updateLogs])
   }
 
-  const handleReject = (id: string) => {
-    setPendingEntities(pendingEntities.filter((entity) => entity.id !== id))
+  const handleReject = async (id: string) => {
+    try {
+      const result = await rejectEntity(id)
 
-    // Add a new log entry
-    const entityName = pendingEntities.find((e) => e.id === id)?.name || "Unknown"
-    const newLog = {
-      id: Date.now().toString(),
-      timestamp: new Date().toISOString(),
-      action: "reject",
-      details: `Rejected: ${entityName}`,
-      duration: "1 sec",
+      if (result.success) {
+        setPendingEntities(pendingEntities.filter((entity) => entity.id !== id))
+
+        // Add a new log entry
+        const entityName = pendingEntities.find((e) => e.id === id)?.name || "Unknown"
+        const newLog = {
+          id: Date.now().toString(),
+          timestamp: new Date().toISOString(),
+          action: "reject",
+          details: `Rejected: ${entityName}`,
+          duration: "1 sec",
+        }
+        setUpdateLogs([newLog, ...updateLogs])
+        setToast({ message: `Successfully rejected ${entityName}`, type: "success" })
+      } else {
+        setToast({ message: result.error || "Failed to reject entity", type: "error" })
+      }
+    } catch (error: any) {
+      console.error("Error rejecting entity:", error)
+      setToast({ message: error.message || "Failed to reject entity", type: "error" })
     }
-    setUpdateLogs([newLog, ...updateLogs])
   }
 
   const scrollToUpload = () => {
@@ -186,7 +236,7 @@ export default function AdminPage() {
               {isRefreshingNews ? (
                 <>
                   <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                  Fetching News...
+                  Fetching from Grok...
                 </>
               ) : (
                 <>
@@ -256,7 +306,9 @@ export default function AdminPage() {
                           {entity.entity_type === "investor" && "Investor"}
                           {entity.entity_type === "ecosystem_builder" && "Ecosystem Builder"}
                         </TableCell>
-                        <TableCell>{new Date(entity.submitted_at).toLocaleDateString()}</TableCell>
+                        <TableCell>
+                          {entity.submitted_at ? new Date(entity.submitted_at).toLocaleDateString() : "Unknown"}
+                        </TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-2">
                             <Button size="sm" variant="outline" onClick={() => handleReject(entity.id)}>
@@ -301,7 +353,9 @@ export default function AdminPage() {
                 <TableBody>
                   {updateLogs.map((log) => (
                     <TableRow key={log.id}>
-                      <TableCell className="font-medium">{new Date(log.timestamp).toLocaleString()}</TableCell>
+                      <TableCell className="font-medium">
+                        {new Date(log.timestamp || log.created_at).toLocaleString()}
+                      </TableCell>
                       <TableCell>
                         {log.action === "update" && (
                           <Badge variant="outline" className="bg-blue-50 text-blue-700">
@@ -312,7 +366,7 @@ export default function AdminPage() {
                         {log.action === "news_refresh" && (
                           <Badge variant="outline" className="bg-green-50 text-green-700">
                             <RefreshCw className="mr-1 h-3 w-3" />
-                            News
+                            Grok AI
                           </Badge>
                         )}
                         {log.action === "approve" && (
