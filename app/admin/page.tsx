@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useRef } from "react"
 import { RefreshCw, Database, Check, X, Clock, Upload } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -10,6 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { UploadCsvForm } from "@/components/upload-csv-form"
 import { Toast } from "@/components/ui/toast"
 import { mockPendingEntities, mockUpdateLogs } from "@/lib/mock-data"
+import { PendingEntityModal } from "@/components/pending-entity-modal"
 
 export default function AdminPage() {
   const [isUpdating, setIsUpdating] = useState(false)
@@ -19,6 +20,11 @@ export default function AdminPage() {
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null)
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null)
   const [lastNewsRefresh, setLastNewsRefresh] = useState<Date | null>(null)
+  const [activeTab, setActiveTab] = useState("pending")
+  const uploadSectionRef = useRef<HTMLDivElement>(null)
+
+  const [selectedEntity, setSelectedEntity] = useState<any | null>(null)
+  const [isModalOpen, setIsModalOpen] = useState(false)
 
   const handleRunUpdate = async () => {
     setIsUpdating(true)
@@ -72,15 +78,26 @@ export default function AdminPage() {
     }
   }
 
+  const handleEntityClick = (entity: any) => {
+    setSelectedEntity(entity)
+    setIsModalOpen(true)
+  }
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false)
+    setSelectedEntity(null)
+  }
+
   const handleApprove = (id: string) => {
     setPendingEntities(pendingEntities.filter((entity) => entity.id !== id))
 
     // Add a new log entry
+    const entityName = pendingEntities.find((e) => e.id === id)?.name || "Unknown"
     const newLog = {
       id: Date.now().toString(),
       timestamp: new Date().toISOString(),
       action: "approve",
-      details: `Approved: ${pendingEntities.find((e) => e.id === id)?.name}`,
+      details: `Approved: ${entityName}`,
       duration: "1 sec",
     }
     setUpdateLogs([newLog, ...updateLogs])
@@ -90,14 +107,24 @@ export default function AdminPage() {
     setPendingEntities(pendingEntities.filter((entity) => entity.id !== id))
 
     // Add a new log entry
+    const entityName = pendingEntities.find((e) => e.id === id)?.name || "Unknown"
     const newLog = {
       id: Date.now().toString(),
       timestamp: new Date().toISOString(),
       action: "reject",
-      details: `Rejected: ${pendingEntities.find((e) => e.id === id)?.name}`,
+      details: `Rejected: ${entityName}`,
       duration: "1 sec",
     }
     setUpdateLogs([newLog, ...updateLogs])
+  }
+
+  const scrollToUpload = () => {
+    setActiveTab("upload")
+    setTimeout(() => {
+      if (uploadSectionRef.current) {
+        uploadSectionRef.current.scrollIntoView({ behavior: "smooth" })
+      }
+    }, 100)
   }
 
   return (
@@ -162,17 +189,15 @@ export default function AdminPage() {
             <CardDescription>Bulk upload organizations via CSV/Excel</CardDescription>
           </CardHeader>
           <CardContent>
-            <Button asChild className="w-full" variant="outline">
-              <a href="#upload-section">
-                <Upload className="mr-2 h-4 w-4" />
-                Upload CSV
-              </a>
+            <Button onClick={scrollToUpload} className="w-full" variant="outline">
+              <Upload className="mr-2 h-4 w-4" />
+              Upload CSV
             </Button>
           </CardContent>
         </Card>
       </div>
 
-      <Tabs defaultValue="pending" className="w-full">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full max-w-md grid-cols-3">
           <TabsTrigger value="pending">
             Pending Approvals
@@ -200,7 +225,14 @@ export default function AdminPage() {
                   <TableBody>
                     {pendingEntities.map((entity) => (
                       <TableRow key={entity.id}>
-                        <TableCell className="font-medium">{entity.name}</TableCell>
+                        <TableCell className="font-medium">
+                          <button
+                            onClick={() => handleEntityClick(entity)}
+                            className="text-left hover:text-primary-700 hover:underline"
+                          >
+                            {entity.name}
+                          </button>
+                        </TableCell>
                         <TableCell>
                           {entity.entity_type === "social_enterprise" && "Social Enterprise"}
                           {entity.entity_type === "investor" && "Investor"}
@@ -293,20 +325,29 @@ export default function AdminPage() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="upload" className="mt-6" id="upload-section">
-          <Card>
-            <CardHeader>
-              <CardTitle>Bulk Upload Organizations</CardTitle>
-              <CardDescription>Upload multiple organizations to the directory at once</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <UploadCsvForm />
-            </CardContent>
-          </Card>
+        <TabsContent value="upload" className="mt-6">
+          <div ref={uploadSectionRef}>
+            <Card>
+              <CardHeader>
+                <CardTitle>Bulk Upload Organizations</CardTitle>
+                <CardDescription>Upload multiple organizations to the directory at once</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <UploadCsvForm />
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
       </Tabs>
 
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+      <PendingEntityModal
+        entity={selectedEntity}
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+        onApprove={handleApprove}
+        onReject={handleReject}
+      />
     </main>
   )
 }

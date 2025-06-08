@@ -14,10 +14,12 @@ interface AddEntityFormProps {
   initialData?: any
   onSubmit: (data: any) => void
   isLoading?: boolean
+  isEditing?: boolean
 }
 
-export function AddEntityForm({ initialData, onSubmit, isLoading = false }: AddEntityFormProps) {
+export function AddEntityForm({ initialData, onSubmit, isLoading = false, isEditing = false }: AddEntityFormProps) {
   const [formData, setFormData] = useState({
+    id: initialData?.id || "",
     name: initialData?.name || "",
     entity_type: initialData?.entity_type || "social_enterprise",
     website: initialData?.website || "",
@@ -30,6 +32,14 @@ export function AddEntityForm({ initialData, onSubmit, isLoading = false }: AddE
     investment_thesis: initialData?.investment_thesis || "",
     program_type: initialData?.program_type || "",
     next_intake_date: initialData?.next_intake_date || "",
+    impact: initialData?.impact || "",
+    problem_solved: initialData?.problem_solved || "",
+    target_beneficiaries: initialData?.target_beneficiaries || "",
+    revenue_model: initialData?.revenue_model || "",
+    year_founded: initialData?.year_founded || "",
+    awards: initialData?.awards || "",
+    grants: initialData?.grants || "",
+    institutional_support: initialData?.institutional_support || "",
   })
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -52,7 +62,16 @@ export function AddEntityForm({ initialData, onSubmit, isLoading = false }: AddE
         <div className="grid gap-4 md:grid-cols-2">
           <div className="space-y-2">
             <Label htmlFor="name">Organization Name *</Label>
-            <Input id="name" name="name" value={formData.name} onChange={handleChange} required />
+            <Input
+              id="name"
+              name="name"
+              value={formData.name}
+              onChange={handleChange}
+              required
+              disabled={isEditing}
+              className={isEditing ? "bg-gray-100" : ""}
+            />
+            {isEditing && <p className="text-xs text-muted-foreground">Organization name cannot be changed</p>}
           </div>
 
           <div className="space-y-2">
@@ -122,26 +141,87 @@ export function AddEntityForm({ initialData, onSubmit, isLoading = false }: AddE
           </div>
         </div>
 
-        {formData.entity_type === "social_enterprise" && (
+        <div className="grid gap-4 md:grid-cols-2">
           <div className="space-y-2">
-            <Label htmlFor="funding_stage">Funding Stage</Label>
-            <Select
-              value={formData.funding_stage}
-              onValueChange={(value) => handleSelectChange("funding_stage", value)}
-            >
-              <SelectTrigger id="funding_stage">
-                <SelectValue placeholder="Select funding stage" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Idea">Idea</SelectItem>
-                <SelectItem value="Pre-seed">Pre-seed</SelectItem>
-                <SelectItem value="Seed">Seed</SelectItem>
-                <SelectItem value="Series A">Series A</SelectItem>
-                <SelectItem value="Series B+">Series B+</SelectItem>
-                <SelectItem value="Growth">Growth</SelectItem>
-              </SelectContent>
-            </Select>
+            <Label htmlFor="year_founded">Year Founded</Label>
+            <Input
+              id="year_founded"
+              name="year_founded"
+              value={formData.year_founded}
+              onChange={handleChange}
+              placeholder="e.g., 2020"
+            />
           </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="target_beneficiaries">Target Beneficiaries</Label>
+            <Input
+              id="target_beneficiaries"
+              name="target_beneficiaries"
+              value={formData.target_beneficiaries}
+              onChange={handleChange}
+              placeholder="e.g., Youth, Women, Rural Communities"
+            />
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="impact">Impact</Label>
+          <Textarea
+            id="impact"
+            name="impact"
+            rows={3}
+            value={formData.impact}
+            onChange={handleChange}
+            placeholder="Describe the impact your organization creates"
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="problem_solved">Problem Solved</Label>
+          <Textarea
+            id="problem_solved"
+            name="problem_solved"
+            rows={3}
+            value={formData.problem_solved}
+            onChange={handleChange}
+            placeholder="Describe the problem your organization addresses"
+          />
+        </div>
+
+        {formData.entity_type === "social_enterprise" && (
+          <>
+            <div className="space-y-2">
+              <Label htmlFor="funding_stage">Funding Stage</Label>
+              <Select
+                value={formData.funding_stage}
+                onValueChange={(value) => handleSelectChange("funding_stage", value)}
+              >
+                <SelectTrigger id="funding_stage">
+                  <SelectValue placeholder="Select funding stage" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Idea">Idea</SelectItem>
+                  <SelectItem value="Pre-seed">Pre-seed</SelectItem>
+                  <SelectItem value="Seed">Seed</SelectItem>
+                  <SelectItem value="Series A">Series A</SelectItem>
+                  <SelectItem value="Series B+">Series B+</SelectItem>
+                  <SelectItem value="Growth">Growth</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="revenue_model">Revenue Model</Label>
+              <Input
+                id="revenue_model"
+                name="revenue_model"
+                value={formData.revenue_model}
+                onChange={handleChange}
+                placeholder="e.g., Product Sales, Service Fees, Subscriptions"
+              />
+            </div>
+          </>
         )}
 
         {formData.entity_type === "investor" && (
@@ -204,6 +284,41 @@ export function AddEntityForm({ initialData, onSubmit, isLoading = false }: AddE
             </div>
           </div>
         )}
+
+        <div className="grid gap-4 md:grid-cols-3">
+          <div className="space-y-2">
+            <Label htmlFor="awards">Awards</Label>
+            <Input
+              id="awards"
+              name="awards"
+              value={formData.awards}
+              onChange={handleChange}
+              placeholder="Any awards received"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="grants">Grants</Label>
+            <Input
+              id="grants"
+              name="grants"
+              value={formData.grants}
+              onChange={handleChange}
+              placeholder="Any grants received"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="institutional_support">Institutional Support</Label>
+            <Input
+              id="institutional_support"
+              name="institutional_support"
+              value={formData.institutional_support}
+              onChange={handleChange}
+              placeholder="Any institutional support"
+            />
+          </div>
+        </div>
       </div>
 
       <Button type="submit" className="w-full" disabled={isLoading}>

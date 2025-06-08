@@ -21,11 +21,18 @@ export function FilterSidebar() {
   const [locations, setLocations] = useState<string[]>([])
 
   useEffect(() => {
-    // Load filter options from real data
-    getFilterOptions().then(({ sectors, locations }) => {
-      setSectors(sectors)
-      setLocations(locations)
-    })
+    // Load filter options from real data or fall back to mock data
+    getFilterOptions()
+      .then(({ sectors, locations }) => {
+        setSectors(sectors || [])
+        setLocations(locations || [])
+      })
+      .catch((error) => {
+        console.error("Error loading filter options:", error)
+        // Set some default options if there's an error
+        setSectors(["Education", "Environment", "Healthcare"])
+        setLocations(["Kuala Lumpur", "Selangor", "Penang"])
+      })
   }, [])
 
   const handleFilterChange = (type: string, value: string) => {

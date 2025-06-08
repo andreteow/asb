@@ -1,7 +1,7 @@
 import { EntityCard } from "@/components/entity-card"
 import { EntityTypeFilter } from "@/components/entity-type-filter"
 import { RealTimeSearch } from "@/components/real-time-search"
-import { FilterSidebar } from "@/components/filter-sidebar"
+import { CollapsibleFilterSidebar } from "@/components/collapsible-filter-sidebar"
 import { NewsFeed } from "@/components/news-feed"
 import { Pagination } from "@/components/pagination"
 import { getEntities } from "@/lib/data"
@@ -17,6 +17,7 @@ export default async function Home({
   const location = typeof searchParams.location === "string" ? searchParams.location : undefined
   const page = typeof searchParams.page === "string" ? Number.parseInt(searchParams.page) : 1
 
+  // The getEntities function now handles the case when Supabase is not available
   const { entities, total, totalPages } = await getEntities({
     query,
     entityType,
@@ -50,8 +51,8 @@ export default async function Home({
         </div>
 
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-[280px_1fr_300px]">
-          <div className="hidden lg:block">
-            <FilterSidebar />
+          <div className="lg:block">
+            <CollapsibleFilterSidebar />
           </div>
 
           <div>
@@ -63,7 +64,7 @@ export default async function Home({
 
             {entities.length > 0 ? (
               <>
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+                <div className="grid grid-cols-1 gap-4">
                   {entities.map((entity) => (
                     <EntityCard key={entity.id} entity={entity} />
                   ))}

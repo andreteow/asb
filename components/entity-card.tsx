@@ -15,9 +15,11 @@ export function EntityCard({ entity }: EntityCardProps) {
     ecosystem_builder: "Ecosystem Builder",
   }[entity.entity_type]
 
+  const profileUrl = `/profile/${entity.slug || entity.id}`
+
   return (
-    <Link href={`/profile/${entity.id}`} className="block">
-      <Card className="overflow-hidden transition-all hover:shadow-md hover:shadow-primary-200 cursor-pointer group">
+    <Link href={profileUrl} className="block">
+      <Card className="overflow-hidden transition-all hover:shadow-md hover:shadow-primary-200 cursor-pointer group mb-4">
         <CardContent className="p-6">
           <div className="mb-2 flex items-start justify-between">
             <h3 className="font-medium group-hover:text-primary-700 transition-colors">{entity.name}</h3>

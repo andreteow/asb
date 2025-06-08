@@ -2,6 +2,7 @@ export interface Entity {
   id: string
   entity_type: "social_enterprise" | "investor" | "ecosystem_builder"
   name: string
+  slug?: string
   website: string
   description: string
   hq_location?: string
@@ -27,4 +28,5 @@ export interface Entity {
   awards?: string
   grants?: string
   institutional_support?: string
+  submitted_at?: string
 }

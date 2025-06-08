@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { ArrowLeft, Globe, Loader2 } from "lucide-react"
@@ -12,6 +12,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { AddEntityForm } from "@/components/add-entity-form"
 import { UploadCsvForm } from "@/components/upload-csv-form"
+import { getEntityById } from "@/lib/data"
+import { Toast } from "@/components/ui/toast"
 
 export default function AddPage() {
   const router = useRouter()
@@ -21,8 +23,35 @@ export default function AddPage() {
   const [activeTab, setActiveTab] = useState<string>("website")
   const [websiteUrl, setWebsiteUrl] = useState("")
   const [isLoading, setIsLoading] = useState(false)
+  const [isLoadingEntity, setIsLoadingEntity] = useState(!!editId)
   const [entityData, setEntityData] = useState<any>(null)
   const [step, setStep] = useState(1)
+  const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null)
+
+  // Fetch entity data if editing
+  useEffect(() => {
+    if (editId) {
+      const fetchEntity = async () => {
+        setIsLoadingEntity(true)
+        try {
+          const entity = await getEntityById(editId)
+          if (entity) {
+            setEntityData(entity)
+            setStep(2)
+          } else {
+            setToast({ message: "Entity not found", type: "error" })
+          }
+        } catch (error) {
+          console.error("Error fetching entity:", error)
+          setToast({ message: "Error loading entity data", type: "error" })
+        } finally {
+          setIsLoadingEntity(false)
+        }
+      }
+
+      fetchEntity()
+    }
+  }, [editId])
 
   const handleWebsiteSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -51,6 +80,7 @@ export default function AddPage() {
       setStep(2)
     } catch (error) {
       console.error("Error enriching data:", error)
+      setToast({ message: "Error analyzing website", type: "error" })
     } finally {
       setIsLoading(false)
     }
@@ -64,12 +94,27 @@ export default function AddPage() {
       await new Promise((resolve) => setTimeout(resolve, 1000))
 
       // Redirect to home with success message
-      router.push("/?success=true")
+      setToast({ message: "Organization submitted successfully!", type: "success" })
+      setTimeout(() => {
+        router.push("/?success=true")
+      }, 2000)
     } catch (error) {
       console.error("Error submitting form:", error)
+      setToast({ message: "Error submitting form", type: "error" })
     } finally {
       setIsLoading(false)
     }
+  }
+
+  if (isLoadingEntity) {
+    return (
+      <div className="container mx-auto px-4 py-8 flex items-center justify-center min-h-[50vh]">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary-700" />
+          <p className="mt-4">Loading organization data...</p>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -162,10 +207,17 @@ export default function AddPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <AddEntityForm initialData={entityData} onSubmit={handleFormSubmit} isLoading={isLoading} />
+              <AddEntityForm
+                initialData={entityData}
+                onSubmit={handleFormSubmit}
+                isLoading={isLoading}
+                isEditing={!!editId}
+              />
             </CardContent>
           </Card>
         )}
+
+        {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
       </div>
     </main>
   )

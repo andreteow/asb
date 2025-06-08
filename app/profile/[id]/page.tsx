@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { notFound } from "next/navigation"
+import { notFound, redirect } from "next/navigation"
 import { ArrowLeft, Mail } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -12,6 +12,10 @@ export default async function ProfilePage({ params }: { params: { id: string } }
 
   if (!entity) {
     notFound()
+  }
+
+  if (entity && entity.slug) {
+    redirect(`/profile/${entity.slug}`)
   }
 
   const similarEntities = await getSimilarEntities(params.id, 5)
