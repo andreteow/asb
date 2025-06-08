@@ -1,6 +1,9 @@
 # Malaysia's Impact Ecosystem Directory
 
-A web application for managing and exploring Malaysia's impact ecosystem directory. Organizations can add their profiles through website URL scraping or bulk CSV uploads.
+You open a single website and instantly see what every Malaysian social enterprise, investor and ecosystem builder is up to right now. That’s the vibe we’re going for with ASBhive.
+
+We grab useful info that’s already floating around the internet (think company pages, news stories, LinkedIn posts) and pull it into one clean map. Anything the AI miss, humans can add by hand. The data stays fresh in real-time, and anyone can search or filter to find potential partners, cool projects or funding leads. Bottom line: more visibility, less guesswork and a tighter, friendlier startup scene.
+
 
 ## Features
 
@@ -10,15 +13,20 @@ A web application for managing and exploring Malaysia's impact ecosystem directo
 - **Profile Management**: Edit and update organization profiles
 - **Interactive UI**: Modern, responsive interface built with Next.js and Tailwind CSS
 
-## Tech Stack
+## How we’ll make the magic happen
 
-- **Frontend**: Next.js 13+ with TypeScript
+- **Frontend**: Next.js plus React, polished with Tailwind and shadcn/ui for snappy, modern screens
 - **UI Components**: 
   - Tailwind CSS for styling
   - Shadcn UI components
   - Lucide icons
+  - TurndownService to flip messy HTML into tidy Markdown
 - **API Integration**: Axios for HTTP requests
 - **Backend**: Flask API for web scraping (separate repository)
+- **Database**: Supabase keeps everything organised and easy to query, 
+- **AI sidekick**: 
+    - Grok AI pulls in trending news so you never miss a headline 
+    - Google's Gemini AI for extracting and summarizing website content
 
 ## Getting Started
 
@@ -131,8 +139,8 @@ The application integrates with a Flask-based scraping API:
 
 This project is licensed under the MIT License - see the LICENSE file for details.
 
-## Acknowledgments
-
-- Shadcn UI for the component library
-- Next.js team for the framework
-- All contributors to the project
+## Quick takeaways
+- One stop map for Malaysia’s social-enterprise universe
+- Real-time updates from both web scraping and manual entries
+- Search and filters so users find exactly who or what they need
+- Friendly tech stack that’s fast to ship and easy to scale
