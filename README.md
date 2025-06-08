@@ -122,7 +122,7 @@ asb/
 
 The application integrates with a Flask-based scraping API:
 
-- Endpoint: `https://asbhive-api.onrender.com`
+- Endpoint: `https://asbhive-api.onrender.com/scrape`
 - Method: POST
 - Request Body: `{ "url": "website-url" }`
 - Response: Organization data in JSON format
