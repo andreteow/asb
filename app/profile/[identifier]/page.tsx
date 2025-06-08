@@ -1,19 +1,29 @@
 import Link from "next/link"
-import { notFound } from "next/navigation"
+import { notFound, redirect } from "next/navigation"
 import { ArrowLeft } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
-import { getEntityBySlug, getSimilarEntities } from "@/lib/data"
+import { getEntityById, getEntityBySlug, getSimilarEntities } from "@/lib/data"
 import { EntityNewsFeed } from "@/components/entity-news-feed"
 import { IntroRequestButton } from "@/components/intro-request-button"
 
-export default async function ProfilePage({ params }: { params: { slug: string } }) {
-  console.log("Looking for entity with slug:", params.slug)
+export default async function ProfilePage({ params }: { params: { identifier: string } }) {
+  console.log("Looking for entity with identifier:", params.identifier)
 
   try {
-    const entity = await getEntityBySlug(params.slug)
-    console.log("Entity found:", entity ? entity.name : "null")
+    // First try to get by slug, then by ID
+    let entity = await getEntityBySlug(params.identifier)
+
+    if (!entity) {
+      // If not found by slug, try by ID
+      entity = await getEntityById(params.identifier)
+
+      // If found by ID and has a slug, redirect to slug URL
+      if (entity && entity.slug) {
+        redirect(`/profile/${entity.slug}`)
+      }
+    }
 
     if (!entity) {
       console.log("Entity not found, calling notFound()")
