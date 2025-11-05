@@ -9,9 +9,10 @@ import { ThemeProvider } from "@/components/theme-provider"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "ASBhive - Malaysia's Impact Ecosystem Directory",
-  description: "Connect with social enterprises, investors, and ecosystem builders in Malaysia",
-    generator: 'v0.dev'
+  title: "TTE Elephant Sanctuary",
+  description:
+    "Experience mindful getaways with TTE Elephant. Book eco-luxury stays, meet our rescued elephants, and follow our conservation journey.",
+  generator: "v0.dev",
 }
 
 export default function RootLayout({
